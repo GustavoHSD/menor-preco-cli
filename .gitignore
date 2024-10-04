@@ -1,0 +1,7 @@
+.env
+.secrets
+.venv
+__pycache__
+google-credentials.json
+menor-preco.db
+test_menor-preco.db
