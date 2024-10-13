@@ -3,12 +3,13 @@ from database.query_repository import QueryRepository
 from database.spreadsheet_repository import SpreadsheetRepository
 from googleapiclient.errors import HttpError
 from context import google_credentials_context
+from error.Result import Result
 from lib.scrapper import get_products
 from lib.util import spinner
 from models import Spreadsheet, Query, Sheet
 
 @spinner(tasks=["Creating spreadsheet..."])
-def add_spreadsheet(query: Query) -> Spreadsheet | None:
+def add_spreadsheet(query: Query) -> Result[Spreadsheet, HttpError]:
     spreadsheet_repo = SpreadsheetRepository()
     query_repo = QueryRepository()
     spreadsheet = None
@@ -26,10 +27,9 @@ def add_spreadsheet(query: Query) -> Spreadsheet | None:
             spreadsheet = Spreadsheet(id=None, google_id=response.get("spreadsheetId"), query=query)
             spreadsheet_repo.save(spreadsheet)
             query_repo.save(query)
-        return spreadsheet
+        return Result(spreadsheet, None)
     except HttpError as error:
-        print(f"An error occured: {error}")
-        raise Exception("Could not finish request") 
+        return Result(None, error)
 
 @spinner(tasks=["Fetching products...", "Populating sheets..."])
 def populate_spreadsheet(id: int):

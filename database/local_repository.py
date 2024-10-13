@@ -1,10 +1,11 @@
 from context import database_context
 from database.repository_interface import Repository
+from error.EntityNotFound import EntityNotFound
+from error.Result import Result
 from models import Local
 
 class LocalRepository(Repository[Local]):
-    def find_by_id(self, id: int) -> Local | None: 
-        local = None
+    def find_by_id(self, id: int) -> Result[Local, EntityNotFound]: 
         with database_context() as connection:
             cursor = connection.cursor()
             row = cursor.execute('''
@@ -13,7 +14,7 @@ class LocalRepository(Repository[Local]):
             if row:
                 id, geohash, name = row
                 local = Local(id=id, geohash=geohash, name=name)
-            return local
+            return Result(value=local, error=EntityNotFound(f"Could not find local of id {id}"))
             
     def find_all(self) -> list[Local]:
         with database_context() as connection:
