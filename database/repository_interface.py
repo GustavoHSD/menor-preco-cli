@@ -14,7 +14,7 @@ class Repository(Generic[T], ABC):
         pass
 
     @abstractmethod
-    def find_all(self) -> list[T]:
+    def find_all(self) -> Result[list[T], EntityNotFound]:
         pass
 
     @abstractmethod

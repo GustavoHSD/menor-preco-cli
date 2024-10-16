@@ -89,9 +89,12 @@ class QueryRepository(Repository[Query]):
             return Result(entity, None)
 
     def delete_by_id(self, id: int) -> Result[int, EntityNotDeleted]:
-        with database_context() as connection:
-            cursor = connection.cursor()
-            cursor.execute("DELETE FROM query WHERE id = ?", (str(id)))
+        try:
+            with database_context() as connection:
+                cursor = connection.cursor()
+                cursor.execute("DELETE FROM query WHERE id = ?", (str(id)))
+        except Exception as err:
+            return Result(None, EntityNotDeleted(f"Could not delete entity of id {id}", err))
         return Result(id, None)
 
     def exists_by_id(self, id: int) -> bool:
