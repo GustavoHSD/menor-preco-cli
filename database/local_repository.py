@@ -31,7 +31,7 @@ class LocalRepository(Repository[Local]):
                     SELECT * 
                     FROM local
                 ''').fetchall()
-                if len(rows):
+                if len(rows) == 0:
                     return Result(None, EntityNotFound("No locals found"))
             except Exception as err:
                 return Result(None, EntityNotFound(f"No locals found", err))
@@ -68,6 +68,8 @@ class LocalRepository(Repository[Local]):
             try:
                 cursor = connection.cursor()
                 cursor.execute("DELETE FROM local WHERE id = ?", (str(id),))
+                if cursor.rowcount == 0:
+                    return Result(None, EntityNotDeleted(f"Could not delete entity of id {id}"))
             except Exception as err:
                 return Result(None, EntityNotDeleted(f"Could not delete entity of id {id}", err))
         return Result(id, None)
@@ -90,7 +92,15 @@ class LocalRepository(Repository[Local]):
                 locals.append(Local(local_id, geohash, name))
             return Result(locals, None)
 
-    def find_by_name(self, name: str) -> Local | None:
+    def exists_by_id(self, id: int) -> bool:
+        with database_context() as connection:
+            cursor = connection.cursor()
+            row = cursor.execute("SELECT * FROM local WHERE id = ?", (str(id))).fetchone()
+            if row is None:
+                return False
+            return True
+        
+    def find_by_name(self, name: str) -> Result[Local, EntityNotFound]:
         local = None
         with database_context() as connection:
             cursor = connection.cursor()
@@ -99,8 +109,11 @@ class LocalRepository(Repository[Local]):
                 FROM local AS l
                 WHERE l.name = ? COLLATE NOCASE
             ''', (name,)).fetchone()
-            if row:
-                id, geohash, name = row
-                local = Local(id=id, geohash=geohash, name=name) 
-            return local
+            if row is None:
+                return Result(None, EntityNotFound(f"Could not find local of name: {name}"))
+
+            id, geohash, name = row
+            local = Local(id=id, geohash=geohash, name=name) 
+
+        return Result(local, None)
 

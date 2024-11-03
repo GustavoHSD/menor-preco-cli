@@ -3,6 +3,7 @@ from database.query_repository import QueryRepository
 from database.spreadsheet_repository import SpreadsheetRepository
 from googleapiclient.errors import HttpError
 from context import google_credentials_context
+from error.CouldNotPopulateSpreadsheet import CouldNotPopulateSpreadsheet
 from error.Result import Result
 from lib.scrapper import get_products
 from lib.util import spinner
@@ -32,13 +33,21 @@ def add_spreadsheet(query: Query) -> Result[Spreadsheet, HttpError]:
         return Result(None, error)
 
 @spinner(tasks=["Fetching products...", "Populating sheets..."])
-def populate_spreadsheet(id: int):
+def populate_spreadsheet(id: int) -> Result[None, CouldNotPopulateSpreadsheet]:
     repo = SpreadsheetRepository()
-    spreadsheet = repo.find_by_id(id)
-    if not spreadsheet or not spreadsheet.query:
-        print("Spreadsheet or query not found")
-        return
+    spreadsheet_result = repo.find_by_id(id)
 
+    if not spreadsheet_result.value:
+        return Result(None, CouldNotPopulateSpreadsheet(f"Could not find spreadsheet of id: {id} to populate"))
+
+    if spreadsheet_result.error:
+        return Result(None, CouldNotPopulateSpreadsheet(f"Could not find spreadsheet of id: {id} to populate", spreadsheet_result.error))
+
+    spreadsheet = spreadsheet_result.value
+
+    if not spreadsheet.query:
+        return Result(None, CouldNotPopulateSpreadsheet(f"Spreadsheet of id: {id} missing query"))
+        
     sheets = __get_sheets(spreadsheet)
     requests = []
     if len(sheets) == 0: # if no valid sheets are found create sheets
@@ -51,15 +60,18 @@ def populate_spreadsheet(id: int):
                     }
                 }
             })
-        with google_credentials_context() as context:
-            body = {
-                "requests": requests
-            }
-            (
-                context.service.spreadsheets()
-                .batchUpdate(spreadsheetId=spreadsheet.google_id, body=body)
-                .execute()
-            )
+        try:
+            with google_credentials_context() as context:
+                body = {
+                    "requests": requests
+                }
+                (
+                    context.service.spreadsheets()
+                    .batchUpdate(spreadsheetId=spreadsheet.google_id, body=body)
+                    .execute()
+                )
+        except HttpError as err:
+            return Result(None, CouldNotPopulateSpreadsheet("Could not complete request to save sheets", err))
         sheets = __get_sheets(spreadsheet)
     
     requests = [] 
@@ -68,7 +80,6 @@ def populate_spreadsheet(id: int):
         try:
             data = [["id", "data de emissao", "descricao", "distancia em km", "id do estabelecimento", "nome do estabelecimento", "endereco do estabelecimento", "gtin", "ncm", "nrdoc", "tempo", "valor de venda", "valor de desconto"]]
         except IndexError:
-            print(f"No products for term {spreadsheet.query.term} in local {sheet.title}")
             continue
         for value in values: 
             product = []
@@ -91,22 +102,30 @@ def populate_spreadsheet(id: int):
             }
         })
      
-    with google_credentials_context() as context:
-        body = { 
-            "requests": requests,
-            "includeSpreadsheetInResponse": False,
-            "responseIncludeGridData": False,
-            "responseRanges": [],
-        }
-        
-        (
-            context.service.spreadsheets()
-            .batchUpdate(spreadsheetId=spreadsheet.google_id, body=body)
-            .execute()
-        )
+    try:
+        with google_credentials_context() as context:
+            body = { 
+                "requests": requests,
+                "includeSpreadsheetInResponse": False,
+                "responseIncludeGridData": False,
+                "responseRanges": [],
+            }
+            
+            (
+                context.service.spreadsheets()
+                .batchUpdate(spreadsheetId=spreadsheet.google_id, body=body)
+                .execute()
+            )
+    except HttpError as err:
+        return Result(None, CouldNotPopulateSpreadsheet("Could not complete the request to populate spreadsheet", err))
+
     spreadsheet.is_populated = True
     spreadsheet.last_populated = datetime.datetime.now()
-    repo.save(spreadsheet)
+
+    save_spreadsheet_result = repo.save(spreadsheet)
+    if save_spreadsheet_result.error:
+        return Result(None, CouldNotPopulateSpreadsheet("Could not save spreadsheet to database", save_spreadsheet_result.error))
+    return Result(None, None)
 
 def __get_sheets(spreadsheet: Spreadsheet) -> list[Sheet]:
     sheets = []
@@ -121,7 +140,6 @@ def __get_sheets(spreadsheet: Spreadsheet) -> list[Sheet]:
             properties = sheet.get("properties")
             id = properties.get("sheetId")
             title = properties.get("title")
-            #print(f"id: {id}, title: {title}")
             try:
                 sheets.append(Sheet(id, title, spreadsheet.get_geohash(title)))
             except Exception:

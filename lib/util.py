@@ -1,5 +1,6 @@
 from datetime import datetime
 import re
+from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 import typer
 
@@ -45,3 +46,9 @@ def to_date(date: str | None):
         return None
     return datetime.strptime(date, DATE_FORMAT).date()
 
+def print_error(console: Console, error: Exception | None):
+    if error:
+        console.print(f"[bold red] {error} [/ bold red]")
+    console.print("[bold red] Something went wrong [/ bold red]")
+
+    
