@@ -1,8 +1,9 @@
 import unittest
 from context import database_context
 from database.query_repository import QueryRepository
+from error.EntityNotDeleted import EntityNotDeleted
+from error.EntityNotFound import EntityNotFound
 from models import Category, Query
-
 
 class TestQueryRepository(unittest.TestCase):
     def setUp(self):
@@ -28,32 +29,47 @@ class TestQueryRepository(unittest.TestCase):
             cursor.execute("DROP TABLE IF EXISTS category")
 
     def test_find_by_id(self):
-        query = self.repo.find_by_id(1)
+        query_result = self.repo.find_by_id(1)
+        query = query_result.value
 
         assert query is not None
-        self.assertIsNotNone(query)
-        self.assertEqual(query.id, 1)
-        self.assertEqual(query.term, 'refri 2l')
-        self.assertEqual(query.radius, 5.0)
+        assert query_result.error is None
+
+        assert query is not None
+        assert query.id == 1
+        assert query.term == 'refri 2l'
+        assert query.radius == 5.0
+
+        query_result = self.repo.find_by_id(10)
+        query = query_result.value
+
+        assert query is None
+        assert isinstance(query_result.error, EntityNotFound) is True
 
     def test_find_all(self):
-        queries = self.repo.find_all()
-        self.assertEqual(len(queries), 2) 
+        queries_result = self.repo.find_all()
+        queries = queries_result.value
 
-        query_0 = queries[0]
-        self.assertEqual(query_0.id, 1)
-        self.assertEqual(query_0.term, 'refri 2l')
-        self.assertEqual(query_0.radius, 5.0)
+        assert queries is not None
+        assert queries_result.error is None
 
-        query_1 = queries[1]
-        self.assertEqual(query_1.id, 2)
-        self.assertEqual(query_1.term, 'refri lata')
-        self.assertEqual(query_1.radius, 10.0)
+        assert len(queries) == 2
+
+        assert queries[0].id == 1
+        assert queries[0].term == 'refri 2l'
+        assert queries[0].radius == 5.0
+
+        assert queries[1].id == 2
+        assert queries[1].term == 'refri lata'
+        assert queries[1].radius == 10.0
 
     def test_save(self):
         new_query = Query(id=None, term='pizza', locals=[], radius=5.0, category=Category(id=1, nota_id='55', description='Bebidas'))
+        saved_query_result = self.repo.save(new_query)
+        saved_query = saved_query_result.value
 
-        saved_query = self.repo.save(new_query)
+        assert saved_query is not None
+        assert saved_query_result.error is None
 
         self.assertIsNotNone(saved_query.id)
 
@@ -63,23 +79,49 @@ class TestQueryRepository(unittest.TestCase):
             row = cursor.fetchone()
             id, term, radius = row
 
-            self.assertIsNotNone(row)
-            self.assertEqual(id, 3)  
-            self.assertEqual(term, 'pizza')  
-            self.assertEqual(radius, 5.0)  
+            assert row is not None
+            assert id == 3
+            assert term == 'pizza'
+            assert radius == 5.0
 
     def test_delete_by_id(self):
-        self.repo.delete_by_id(3)
+        delete_result = self.repo.delete_by_id(3) 
+
+        assert delete_result.value == 3
+        assert delete_result.error is None
         
         with database_context() as connection:
             cursor = connection.cursor()
             cursor.execute("SELECT * FROM query WHERE id = ?", (3,))
             row = cursor.fetchone()
-            self.assertIsNone(row)
+            assert row is None 
+
+        delete_result = self.repo.delete_by_id(10)
+        assert delete_result.value is None
+        assert isinstance(delete_result.error, EntityNotDeleted) is True
 
     def test_exists_by_id(self):
         exists = self.repo.exists_by_id(1)
         dont_exists = self.repo.exists_by_id(5)
         
-        self.assertTrue(exists)
-        self.assertFalse(dont_exists)
+        assert exists is True
+        assert dont_exists is False
+
+    def test_find_by_spreadsheet_id(self):
+        query_result = self.repo.find_by_spreadsheet_id(1)
+        query = query_result.value
+
+        assert query is not None
+        assert query_result.error is None
+
+        assert query is not None
+        assert query.id == 1
+        assert query.term == 'refri 2l'
+        assert query.radius == 5.0
+
+        query_result = self.repo.find_by_spreadsheet_id(10)
+        query = query_result.value
+
+        assert query is None
+        assert isinstance(query_result.error, EntityNotFound) is True
+

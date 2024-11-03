@@ -53,8 +53,6 @@ def database_context():
     else:
         raise Exception(f"Mode should be test or dev, not {MODE}")
         
-
-
     try:
         yield connection
     except Exception:
