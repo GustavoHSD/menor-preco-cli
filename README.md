@@ -141,7 +141,7 @@ Este é um aplicativo de linha de comando (CLI) desenvolvido para facilitar o pr
   python main.py listall
   ```
 
-  ![Spreadsheets listall](assets/spreadsheets_listall.png)
+  ![Spreadsheets listall](assets/spreadsheet_listall.png)
 
 ## Contribuição
 
