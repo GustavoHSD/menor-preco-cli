@@ -21,7 +21,7 @@ class QueryRepository(Repository[Query]):
                     SELECT q.id, q.term, q.radius
                     FROM query AS q 
                     WHERE id = ?
-                ''', (str(id))).fetchone()
+                ''', (str(id),)).fetchone()
 
                 if query_row is None:
                     return Result(None, EntityNotFound(f"Could not find query of id: {id}")) 
@@ -119,7 +119,7 @@ class QueryRepository(Repository[Query]):
         try:
             with database_context() as connection:
                 cursor = connection.cursor()
-                cursor.execute("DELETE FROM query WHERE id = ?", (str(id)))
+                cursor.execute("DELETE FROM query WHERE id = ?", (str(id),))
         except Exception as err:
             return Result(None, EntityNotDeleted(f"Could not delete entity of id {id}", err))
         return Result(id, None)
@@ -127,7 +127,7 @@ class QueryRepository(Repository[Query]):
     def exists_by_id(self, id: int) -> bool:
         with database_context() as connection:
             cursor = connection.cursor()
-            row = cursor.execute("SELECT * FROM query WHERE id = ?", (str(id))).fetchone()
+            row = cursor.execute("SELECT * FROM query WHERE id = ?", (str(id),)).fetchone()
             if row is None:
                 return False
             return True
@@ -141,7 +141,7 @@ class QueryRepository(Repository[Query]):
                     FROM query AS q
                     JOIN spreadsheet AS s ON s.query_id = q.id 
                     WHERE s.id = ?
-                ''', (str(id))).fetchone()
+                ''', (str(id),)).fetchone()
 
                 if row is None:
                     return Result(None, EntityNotFound(f"Could not find spreadsheet of query id: {id}"))

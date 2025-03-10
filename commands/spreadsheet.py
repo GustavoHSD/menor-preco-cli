@@ -50,7 +50,12 @@ def create(q: Annotated[Optional[int], typer.Option(help="Id of the query used t
             return
 
         print_queries(queries)
-        query_result = query_repo.find_by_id(option_prompt(queries, "Choose one of the categories by their number"))
+        message = "Choose one of the categories by their number"
+        number = int(typer.prompt(message))
+        while not query_repo.exists_by_id(number):
+            number = int(typer.prompt(message))    
+        query_result = query_repo.find_by_id(number)
+
         if query_result.value:
             query = query_result.value
         else:
@@ -60,7 +65,6 @@ def create(q: Annotated[Optional[int], typer.Option(help="Id of the query used t
         query_result = query_repo.find_by_id(q)
         if query_result.value:
             query = query_result.value
-            console.print(f"Query successfully created")
         else:
             print_error(console, query_result.error)
             return
@@ -70,6 +74,8 @@ def create(q: Annotated[Optional[int], typer.Option(help="Id of the query used t
         populate_result = populate_spreadsheet(spreadsheet_result.value.id)
         if populate_result.error:
             print_error(console, populate_result.error)
+        else:
+            console.print("Spreadsheet populated successfully!")
     else: 
         print_error(console, spreadsheet_result.error)
 

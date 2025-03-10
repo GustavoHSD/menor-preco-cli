@@ -91,7 +91,7 @@ class SpreadsheetRepository(Repository[Spreadsheet]):
         try:
             with database_context() as context:
                 cursor = context.cursor()
-                cursor.execute("DELETE FROM spreadsheet WHERE id = ?", (str(id)))
+                cursor.execute("DELETE FROM spreadsheet WHERE id = ?", (str(id),))
         except Exception as err:
             return Result(None, EntityNotDeleted(f"Could not delete spreadsheet of id: {id}", err))
         return Result(id, None)
@@ -99,7 +99,7 @@ class SpreadsheetRepository(Repository[Spreadsheet]):
     def exists_by_id(self, id: int) -> bool:
         with database_context() as context:
             cursor = context.cursor()
-            row = cursor.execute("SELECT * FROM spreadsheet WHERE id = ?", (str(id))).fetchone()
+            row = cursor.execute("SELECT * FROM spreadsheet WHERE id = ?", (str(id),)).fetchone()
             if row is None:
                 return False
             return True 

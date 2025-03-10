@@ -77,15 +77,14 @@ class LocalRepository(Repository[Local]):
     def find_by_query_id(self, id: int) -> Result[list[Local], EntityNotFound]:
         with database_context() as connection:
             cursor = connection.cursor()
-            try:
-                rows = cursor.execute('''
-                    SELECT l.id, l.geohash, l.name
-                    FROM local AS l
-                    JOIN query_local AS ql ON ql.local_id = l.id
-                    WHERE ql.query_id = ?
-                ''', (str(id))).fetchall()
-            except Exception as err:
-                return Result(None, EntityNotFound(f"No locals found for the query of id: {id}", err))
+            rows = cursor.execute('''
+                SELECT l.id, l.geohash, l.name
+                FROM local AS l
+                JOIN query_local AS ql ON ql.local_id = l.id
+                WHERE ql.query_id = ?
+            ''', (str(id),)).fetchall()
+            if not rows:
+                return Result(None, EntityNotFound(f"No locals found for the query of id: {id}"))
             locals = []
             for row in rows:
                 local_id, geohash, name = row
@@ -95,7 +94,7 @@ class LocalRepository(Repository[Local]):
     def exists_by_id(self, id: int) -> bool:
         with database_context() as connection:
             cursor = connection.cursor()
-            row = cursor.execute("SELECT * FROM local WHERE id = ?", (str(id))).fetchone()
+            row = cursor.execute("SELECT * FROM local WHERE id = ?", (str(id),)).fetchone()
             if row is None:
                 return False
             return True

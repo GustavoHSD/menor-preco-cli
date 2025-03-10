@@ -78,14 +78,12 @@ def populate_spreadsheet(id: int) -> Result[None, CouldNotPopulateSpreadsheet]:
     for sheet in sheets: # build sheet request
         values = get_products(spreadsheet.query, spreadsheet.get_geohash(sheet.title))
         try:
-            data = [["id", "data de emissao", "descricao", "distancia em km", "id do estabelecimento", "nome do estabelecimento", "endereco do estabelecimento", "gtin", "ncm", "nrdoc", "tempo", "valor de venda", "valor de desconto"]]
+            data = [[k for k in values[0].keys()]]
         except IndexError:
             continue
-        for value in values: 
-            product = []
-            for z in zip(value.__dict__.values()):
-                product.append(z[0])
-            data.append(product)
+        product = []
+        for value in values:
+            data.append([v for v in value.values()])
 
         rows = []
         for row in data:
