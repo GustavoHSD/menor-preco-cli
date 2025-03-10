@@ -1,10 +1,6 @@
-Para adicionar a imagem `assets/listall.png` ao README, você pode usar a sintaxe Markdown para incorporar imagens. Abaixo está o README atualizado com a imagem incluída na seção apropriada.
+# Menor preco nota Paraná Scraper App
 
----
-
-# Nota Paraná Scraper App
-
-Este é um aplicativo de linha de comando (CLI) desenvolvido para facilitar o processo de scraping de dados do site **Nota Paraná**. O aplicativo permite criar, atualizar, deletar e listar consultas (queries) que são usadas para extrair informações específicas do site. Além disso, o app também oferece funcionalidades para criar e gerenciar planilhas no Google Sheets com os dados extraídos.
+Este é um aplicativo de linha de comando (CLI) desenvolvido para facilitar o processo de scraping de dados do site **Menor preco nota Paraná**. O aplicativo permite criar, atualizar, deletar e listar consultas (queries) que são usadas para extrair informações específicas do site. Além disso, o app também oferece funcionalidades para criar e gerenciar planilhas no Google Sheets com os dados extraídos.
 
 ## Funcionalidades
 
